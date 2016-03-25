@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/xplacepro/reverseproxy/controllers"
 	"github.com/xplacepro/rpc"
+	"log"
 	"net/http"
 	"os"
 )
@@ -37,5 +38,6 @@ func main() {
 	r.Handle("/api/v1/domains", rpc.Handler{env, controllers.PostListDomainHandler}).Methods("POST")
 	r.Handle("/api/v1/domains/{domain:[a-zA-Z0-9-.]+}", rpc.Handler{env, controllers.DeleteDomainHandler}).Methods("DELETE")
 	http.Handle("/", r)
+	log.Printf("Started server on %s", *Listen)
 	http.ListenAndServe(*Listen, nil)
 }
