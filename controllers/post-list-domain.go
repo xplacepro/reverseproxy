@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/xplacepro/reverseproxy/nginx"
 	"github.com/xplacepro/rpc"
 	"io/ioutil"
@@ -16,49 +15,47 @@ type CreateDomainParams struct {
 	Config string
 }
 
-func ValidatePostListDomain(c CreateDomainParams) map[string]interface{} {
-	validationErrors := make(map[string]interface{})
+func ValidatePostListDomain(c CreateDomainParams) bool {
 	if strings.Trim(c.Domain, " ") == "" {
-		validationErrors["domain"] = "domain is required"
+		return false
 	}
 	if strings.Trim(c.Config, " ") == "" {
-		validationErrors["config"] = "config is required"
+		return false
 	}
-	return validationErrors
+	return true
 }
 
-func PostListDomainHandler(env *rpc.Env, w http.ResponseWriter, r *http.Request) (rpc.Response, int, error) {
+func PostListDomainHandler(env *rpc.Env, w http.ResponseWriter, r *http.Request) rpc.Response {
 	var create_params CreateDomainParams
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return nil, http.StatusBadRequest, rpc.StatusError{Err: err}
+		return rpc.BadRequest(err)
 	}
 
 	err = json.Unmarshal(data, &create_params)
 	if err != nil {
-		return nil, http.StatusBadRequest, rpc.StatusError{Err: err}
+		return rpc.BadRequest(err)
 	}
 
-	validation_errors := ValidatePostListDomain(create_params)
-	if len(validation_errors) > 0 {
-		return nil, http.StatusBadRequest, rpc.StatusError{Err: errors.New("Validation error"), MetadataMap: validation_errors}
+	if !ValidatePostListDomain(create_params) {
+		return rpc.BadRequest(ValidationError)
 	}
 
 	domain := nginx.Domain{Domain: create_params.Domain, Config: create_params.Config}
 	if err := domain.Create(); err != nil {
-		return nil, http.StatusInternalServerError, rpc.StatusError{Err: err}
+		return rpc.InternalError(err)
 	}
 
 	if err := nginx.Test(); err != nil {
 		log.Printf("Error testing nginx configuration for domain %s, %s", domain.Domain, err)
-		return nil, http.StatusInternalServerError, rpc.StatusError{Err: err}
+		return rpc.InternalError(err)
 	}
 
 	if err := nginx.Reload(); err != nil {
-		return nil, http.StatusInternalServerError, rpc.StatusError{Err: err}
+		return rpc.InternalError(err)
 	}
 
-	return rpc.SyncResponse{"Success", http.StatusOK, map[string]interface{}{}}, http.StatusOK, nil
+	return rpc.SyncResponse(nil)
 
 }

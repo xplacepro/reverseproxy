@@ -9,15 +9,27 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"os/user"
 	"syscall"
 )
 
 func ReloadEnv(env *rpc.Env, config map[string]string) {
 	env.Auth = rpc.BasicAuthorization{config["auth.user"], config["auth.password"]}
 	env.ClientAuth = rpc.ClientBasicAuthorization{config["client_auth.user"], config["client_auth.password"]}
+	env.Config = config
 }
 
 func main() {
+
+	if user, err := user.Current(); true {
+		if err != nil {
+			log.Fatal(err)
+		}
+		if user.Uid != "0" {
+			log.Fatal("User must be root")
+		}
+	}
+
 	var ConfigPath = flag.String("config", "config.ini", "Path to configuration file")
 	flag.Parse()
 
