@@ -54,8 +54,8 @@ func main() {
 
 	r := mux.NewRouter()
 	r.StrictSlash(false)
-	r.Handle("/api/v1/domains", rpc.Handler{env, controllers.PostListDomainHandler}).Methods("POST")
-	r.Handle("/api/v1/domains/{domain:[a-zA-Z0-9-.]+}", rpc.Handler{env, controllers.DeleteDomainHandler}).Methods("DELETE")
+	r.Handle("/api/domains/1.0/", rpc.Handler{env, controllers.PostListDomainHandler}).Methods("POST")
+	r.Handle("/api/domains/1.0/{domain:[a-zA-Z0-9-.]+}/", rpc.Handler{env, controllers.DeleteDomainHandler}).Methods("DELETE")
 	http.Handle("/", r)
 	log.Printf("Started server on %s", config["listen"])
 	panic(http.ListenAndServe(config["listen"], nil))
